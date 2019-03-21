@@ -1,0 +1,204 @@
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+Kubernetes
+----------------------------------------------------------------------------------------
+### INSTALL LOCALLY
+
+brew install kubectl
+Download virtualbox
+brew cask install minikube
+minikube start
+
+# to ckeck if everything is ok, should be Running
+minikube status
+
+# cluster info
+kubectl cluster-info
+
+#######################################################
+
+# Create containers with configuration files
+kubectl apply -f client-pod.yaml
+
+kubectl apply -f client-node-port.yaml
+
+#get status
+kubectl get pods
+kubectl get services
+kubectl get nodes
+
+#TO GET IP Adress of our local Node
+minikube ip
+
+
+
+#######################################################
+# Get detailed info about object
+kubectl describe <object type> <object name>
+kubectl describe pod client-pod
+
+
+
+#######################################################
+
+# Delete existing object inside kubernetes
+kubectl delete -f <config file>
+kubectl delete -f client-pod.yaml
+
+
+kubectl apply -f client-deployment.yaml
+
+kubectl get deployments
+
+# get ip of pod
+kubectl get pods -o wide
+
+#######################################################
+# To update container in kubernetes we
+# 1. Tag our containter and push to docker hub
+docker build -t framegenerator/nodeshit:v1 .
+docker push framegenerator/nodeshit:v1
+
+# 2. Run a 'kubectl' command forcing the deployment to use the new image version
+kubectl set image <object_type>/<object_name> <container_name>=<new_image_to_use>
+kubectl set image deployment/client-deployment client=framegenerator/nodeshit:v2
+
+
+
+#######################################################
+# To connect docker client with docker server inside Node:
+eval $(minikube docker-env)
+
+# and then try
+docker ps
+
+#command prints env vars
+minikube docker-env
+
+
+#######################################################
+
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+# COMPLEX to Kubernetes
+
+
+# apply all files in k8s folder
+kubectl apply -f k8s
+
+####
+# Get kubernetes option for creating persistent volume
+kubectl get storageclass
+
+# more options about storage
+kubectl describe storageclass
+
+# get PERSISTENT VOLUMES
+kubectl get pv
+
+# get PERSISTENT VOLUME CLAIMS
+kubectl get pvc
+
+
+----------------------------------------------------------------------------------------
+# To create SECRET.
+#Generic
+kubectl create secret generic <secret_name> --from-literal key=value
+
+#Docker-registry
+kubectl create secret docker-registry <secret_name> --from-literal key=value
+
+#TLS
+kubectl create secret tls <secret_name> --from-literal key=value
+
+
+kubectl create secret generic pgpassword --from-literal PGPASSWORD=12345asdf
+kubectl get secrets
+
+----------------------------------------------------------------------------------------
+# INGRESS
+https://kubernetes.github.io/ingress-nginx/deploy/#prerequisite-generic-deployment-command
+
+#Mandatory command
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/mandatory.yaml
+
+#FOR MINIKUBE after MANDATORY
+minikube addons enable ingress
+
+
+
+
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+#### Kubernetes Production Deployment
+
+
+
+############ENCRIPT GOOGLE CLOUD IAM Credentials for TRAVIS
+# 'cd' to multi-k8s directory and Download container with ruby installed
+docker run -it -v $(pwd):/app ruby:2.3 sh
+
+# install travis cli
+gem isntall travis
+
+travis login
+#copy json file into the 'volumed' directory so we can use it in the container. rename it to service-account.json
+ls #-here we should se our service-account.json file
+travis encrypt-file service-account.json -r egcode/multi-k8s
+
+RESULT:Please add the following to your build script (before_install stage in your .travis.yml, for instance):
+
+    openssl aes-256-cbc -K $encrypted_0c35eebf403c_key -iv $encrypted_0c35eebf403c_iv -in service-account.json.enc -out service-account.json -d
+
+
+----------------------------------------------------------------------------------------
+# CREATE Secret for Kubernetes cluster
+# in the google cloud console:
+
+#config before start creating key
+gcloud config set project multi-k8s-235103
+gcloud config set compute/zone us-west1-a
+gcloud container clusters get-credentials multi-cluster
+
+#then create secret
+kubectl create secret generic pgpassword --from-literal PGPASSWORD=12345asdf
+
+
+----------------------------------------------------------------------------------------
+# INGRESS SETUP
+# go to https://kubernetes.github.io/ingress-nginx/deploy/
+
+
+# Install Helm First
+# https://helm.sh/docs/using_helm/#from-script
+curl https://raw.githubusercontent.com/helm/helm/master/scripts/get > get_helm.sh
+chmod 700 get_helm.sh
+./get_helm.sh
+
+#Allow Tiller to operate
+# Create a new service account called tiller in the kube-system namespace
+kubectl create serviceaccount --namespace kube-system tiller
+# Create a new clusterrolebinding with the role 'cluster-admin' and assign it to service account tiller
+kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+
+# After that Initialize Helm, what service account tiller should be assigned
+helm init --service-account tiller --upgrade
+
+
+# Install INGRESS Using HELM
+# https://kubernetes.github.io/ingress-nginx/deploy/#using-helm
+helm install stable/nginx-ingress --name my-nginx --set rbac.create=true
+
+
+
+
+
+
+
+
+
+
+

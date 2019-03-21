@@ -1,0 +1,37 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t framegenerator/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run framegenerator/react-test npm test -- --coverage
+
+after_success:
+  - docker build -t framegenerator/multi-client:latest ./client
+  - docker build -t framegenerator/multi-nginx:latest ./nginx
+  - docker build -t framegenerator/multi-server:latest ./server
+  - docker build -t framegenerator/multi-worker:latest ./worker
+
+  # Login to the docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+
+  # Take those images and push them to docker hub
+  - docker push framegenerator/multi-client:latest
+  - docker push framegenerator/multi-nginx:latest
+  - docker push framegenerator/multi-server:latest
+  - docker push framegenerator/multi-worker:latest
+
+deploy:
+  provider: elasticbeanstalk
+  region: us-west-2
+  app: multi-docker
+  env: MultiDocker-env
+  bucket_name: elasticbeanstalk-us-west-2-439809786550
+  bucket_path: docker-multi
+  on:
+    branch: master
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key:
+    secure: $AWS_SECRET_KEY

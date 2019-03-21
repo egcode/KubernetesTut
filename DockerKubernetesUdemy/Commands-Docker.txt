@@ -1,0 +1,198 @@
+#run container
+docker run hello-world
+
+docker run busybox ls
+docker run busybox ping google.com
+
+
+#list all running containers
+docker ps
+
+#list all containers ever created
+docker ps --all
+
+
+docker run = docker create + docker start
+
+
+#delete containers
+docker system prune
+
+#log inputs
+docker logs <contrainer id> 
+
+
+#stop container
+docker stop <contrainer id> ##has 10 seconds of shutdown if no response and then kills
+docker kill <contrainer id> ##immediatly stops
+
+
+#REDIS
+docker run redis
+-it flag is equal two flags -i -t
+-i assign to stdIn channel of container
+-t pretty
+#DOCKER EXEC - executes additional command inside contaiter
+docker exec -it <contrainer id> <command>
+docker exec -it 2925f6869168 redis-cli. ##EXAMPLE
+
+#Command prompt in container
+#sh - starts shell inside container
+docker exec -it <contrainer id> sh
+
+
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+1. REDIS IMAGE
+----------------------------------------------------------------------------------------
+############ Building Custom Images Through Docker Server
+
+
+
+Dockerfile
+############ DOCKERFILE START
+
+# Use an existing image as a base
+FROM alpine
+
+# Download and install dependency
+RUN apk add --update redis
+RUN apk add --update gcc
+
+# Tell the image what to do as it starts as a container
+CMD [ "redis-server" ]
+
+############ DOCKERFILE END
+
+
+
+#generate image command
+docker build .
+
+
+#generate image command and Tagging
+docker build -t framegenerator/redis:latest .
+
+
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+2. NodeJSApp
+----------------------------------------------------------------------------------------
+############ Making Real Projects with Docker
+
+#cd to directory with Dockerfile and:
+docker build .
+
+
+
+# build node container with tag
+docker build -t framegenerator/simpleweb .
+
+# and run container with node
+docker run framegenerator/simpleweb
+
+
+# Docker run with PORT MAPPING
+docker run -p 8080:8080 <image id/name>
+docker run -p 8080:8080 framegenerator/simpleweb
+
+
+# open shell in running container
+docker exec -it <container id> sh
+
+
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+3. Compose Containers
+----------------------------------------------------------------------------------------
+
+#build
+docker build -t framegenerator/visits:latest .
+
+#run redis in separate terminal
+docker run redis
+
+
+# Just Run all Yaml containers
+docker-compose up
+
+# Just Run all Yaml containers in the BACKGROUND
+docker-compose up -d
+
+
+# Rebuild Yaml containers
+docker-compose up --build
+
+# Stop all Yaml containers 
+docker-compose down
+
+
+
+# List running containers, should be runned from same directory as yaml file is running
+docker-compose ps
+
+
+
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+4. Production Grade Workflow
+
+https://github.com/egcode/docker-react
+----------------------------------------------------------------------------------------
+
+# install create-react-app
+npm install -g create-react-app
+
+# generate react project in frontend folder
+create-react-app frontend
+
+npm run start
+npm run test
+npm run build
+
+
+# Run Specified Docker file
+docker build -f Dockerfile.dev .
+
+
+# run project with port
+docker run -p 3000:3000 <id>
+
+
+# ---This command runs the container and links everything from build folder except node_modules
+# ---node_modules folder inside container used outside container
+# here we map `$(pwd)`-outside containter  `/app`-inside container
+# /app/node_modules-placeholder inside the container
+docker run -p 3000:3000 -v /app/node_modules -v $(pwd):/app <id>
+
+
+# Build yaml
+docker-compose up
+docker-compose up --build
+
+
+# Run test commaind inside container
+docker run <id> npm run test
+
+
+# Attach to process
+docker attach <id>
+
+
+#BUILD production Dockerfile
+docker build .
+#and try it
+docker run -p 8080:80 <id>
+
+
+# run text and exit at the end
+docker run <id> npm run test -- --coverage
+
+
+
+
+
+
+
+
+
